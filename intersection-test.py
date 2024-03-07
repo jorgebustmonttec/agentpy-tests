@@ -37,7 +37,7 @@ import numpy as np
 
 
 
-# 1= southbound, 2= northbound, 3= eastbound, 4= westbound, 5= intersection area
+
 
 import numpy as np
 
