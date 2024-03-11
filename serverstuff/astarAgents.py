@@ -1,5 +1,3 @@
-#!pip install agentpy
-
 
 import agentpy as ap  # Library for creating agents
 import numpy as np  # NumPy library for numerical operations
@@ -80,17 +78,17 @@ class PathfindingAgent(ap.Agent):
                             if self.time_waited < self.patience:
                                 # Only re-insert the step if the agent decides to wait, not yet recalculating path
                                 self.path.insert(0, next_step)
-                                print("Waiting for another agent to move, step re-inserted.")
+                                #print("Waiting for another agent to move, step re-inserted.")
                                 return  # Return without moving
                             else:
                                 # Patience exceeded, time to recalculate path
-                                print("Patience exceeded, recalculating path...")
+                                #print("Patience exceeded, recalculating path...")
                                 self.time_waited = 0
                                 self.prepare_path(additional_obstacle=next_step)  # Assuming this method recalculates the path
                                 # After recalculating, no need to re-insert the step as the path has been updated
                                 if self.path:
                                     self.found_path = True
-                                    print("New path calculated:", self.path)
+                                    #print("New path calculated:", self.path)
                                 return
                         break  # Break after handling the first pathfinding agent found, assuming one agent per cell
                 else:
@@ -106,7 +104,7 @@ class PathfindingAgent(ap.Agent):
 
             # Check if the agent has reached the destination
             if self.get_position() == self.destination.get_position():
-                print("Agent has reached the destination")
+                #print("Agent has reached the destination")
                 # Remove agent and destination from the grid
                 self.model.grid.remove_agents(self)
                 self.model.grid.remove_agents(self.destination)
@@ -205,7 +203,7 @@ class PathfindingAgent(ap.Agent):
                         if neighbor not in {item[1] for item in open_set.queue}:  # Check if not in open_set
                             open_set.put((f_score[neighbor], neighbor))
 
-        print("No path found")
+        #print("No path found")
         return []  # Return an empty path if there's no path to the end.
 
     def get_position(self):
@@ -282,9 +280,11 @@ class PathfindingModel(ap.Model):
         print("\n")
         #print(self.grid.attr_grid('pathfinding_id'))
         self.report('total-steps', self.t)
+        self.report('obstacle_grid', self.grid.attr_grid('is_perm_obstacle'))
 
 
-parameters={
+
+""" parameters={
     'steps':20,
     'dimensions': 70,
     'n_agents': 70,
@@ -295,4 +295,23 @@ model = PathfindingModel(parameters)
 
 results = model.run()
 
+print(results['reporters']['total-steps'][0]) """
+
+
+def run_model(parameters):
+    model = PathfindingModel(parameters)
+    results = model.run()
+    return results
+
+""" parameters={
+    'steps':20,
+    'dimensions': 70,
+    'n_agents': 70,
+    'obstacle_density': 0.2,
+}
+
+results = run_model(parameters)
+
 print(results['reporters']['total-steps'][0])
+print(results['reporters']['obstacle_grid'][0])
+ """

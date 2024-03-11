@@ -2,7 +2,9 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from addition import add  # Import the add function from addition.py
 from intersection import run_intersection_model  # Import your model function
+from astarAgents import run_model
 import numpy as np
+
 
 app = Flask(__name__)
 CORS(app)
@@ -46,6 +48,29 @@ def run_model():
     print(total_steps)
 
     return jsonify({'intersection_matrix': intersection_matrix, 'total_steps': total_steps})
+
+
+@app.route('/run_astar', methods=['GET'])
+def run_astar():
+    parameters = {
+        'steps': int(request.args.get('steps', 20)),
+        'dimensions': int(request.args.get('dimensions', 16)),
+        'n_agents': int(request.args.get('n_agents', 1)),
+        'obstacle_density': float(request.args.get('obstacle_density', 0.2))
+    }
+
+    results = run_model(parameters)
+    # Ensure total_steps is a native Python int
+    total_steps = int(total_steps)
+
+    # If obstacle_matrix contains NumPy data types, convert them to Python lists with native int/float
+    if isinstance(obstacle_matrix, np.ndarray):
+        obstacle_matrix = obstacle_matrix.tolist()
+
+    # Convert all elements in obstacle_matrix to native Python types if necessary
+    obstacle_matrix = [[float(cell) if isinstance(cell, np.floating) else int(cell) if isinstance(cell, np.integer) else cell for cell in row] for row in obstacle_matrix]
+
+    return jsonify({'obstacle-matrix': obstacle_matrix, 'total_steps': total_steps})
 
 if __name__ == '__main__':
     app.run(debug=True, port=6000)

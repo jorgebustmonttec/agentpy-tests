@@ -750,8 +750,7 @@ def run_intersection_model(parameters):
     #print(steps)
     return results
 
-
-""" parameters={
+parameters={
     'dimensions': 16,  # Dimensions of the grid, minimum 4
     'steps': 20,  # Number of steps to run the model
     'max_cars': 3, # Maximum number of cars
@@ -766,7 +765,7 @@ results =run_intersection_model(parameters)
 print(results['reporters']['intersection_matrix'][0])
 
 # Print the total steps
-print(results['reporters']['total_steps'][0]) """
+print(results['reporters']['total_steps'][0]) 
 
 
 
