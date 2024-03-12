@@ -180,7 +180,7 @@ class Car(ap.Agent):
         )
         self.model.message_boards[self.direction].append(status_message)
         # print the message for debugging
-        print(f"Broadcasting status: {status_message}")
+        #print(f"Broadcasting status: {status_message}")
 
 
     def update_direction(self, road):
@@ -235,11 +235,11 @@ class Car(ap.Agent):
         #self.check_space_after_intersection()
     def check_red_light_runners(self, distance):
         anticipated_position = self.get_position_ahead(distance)
-        print(f"[Debug - Red Light Runner Check] Agent {self.license_plate} position: {self.get_position()}, Direction: {self.direction}")
-        print(f"[Debug - Red Light Runner Check] Anticipated position for distance {distance}: {anticipated_position}")
+        #print(f"[Debug - Red Light Runner Check] Agent {self.license_plate} position: {self.get_position()}, Direction: {self.direction}")
+        #print(f"[Debug - Red Light Runner Check] Anticipated position for distance {distance}: {anticipated_position}")
 
         if not anticipated_position:
-            print("[Debug - Red Light Runner Check] No anticipated position. Returning False.")
+            #print("[Debug - Red Light Runner Check] No anticipated position. Returning False.")
             return False
 
         # Iterate through all message boards except the one corresponding to the car's current direction
@@ -255,26 +255,26 @@ class Car(ap.Agent):
                     speed = int(speed_part.split(': ')[1])
                     position = eval(f"({position_part})")  # Safely convert position string to tuple
                 except ValueError as e:
-                    print(f"[Debug - Red Light Runner Check] Error parsing message content: {e}")
+                    #print(f"[Debug - Red Light Runner Check] Error parsing message content: {e}")
                     continue  # Skip this message if there's an error
 
-                print(f"[Debug - Red Light Runner Check] Reading message from sender {message.sender}: Position {position}")
+                #print(f"[Debug - Red Light Runner Check] Reading message from sender {message.sender}: Position {position}")
                 
                 if position == anticipated_position:
                     # Found a message indicating a car at the anticipated position from a different direction
-                    print(f"[Action - Red Light Runner Check] Agent {self.license_plate} detected a red light runner at {position}. Stopping.")
+                    #print(f"[Action - Red Light Runner Check] Agent {self.license_plate} detected a red light runner at {position}. Stopping.")
                     self.speed = 0
                     return True
 
-        print("[Debug - Red Light Runner Check] No red light runners detected.")
+        #print("[Debug - Red Light Runner Check] No red light runners detected.")
         return False
 
         
 
     def search_for_car(self, distance):
         anticipated_position = self.get_position_ahead(distance)
-        print(f"Agent position: {self.get_position()}")
-        print(f"Anticipated position: {anticipated_position}")
+        #print(f"Agent position: {self.get_position()}")
+        #print(f"Anticipated position: {anticipated_position}")
 
         if not anticipated_position:
             return False
@@ -287,7 +287,7 @@ class Car(ap.Agent):
                 speed = int(speed_part.split(': ')[1])
                 position = eval(f"({position_part})")  # Encapsulate in parentheses to ensure it's a tuple
             except ValueError as e:
-                print(f"Error parsing message content: {e}")
+                #print(f"Error parsing message content: {e}")
                 continue
 
             if position == anticipated_position:
@@ -512,6 +512,11 @@ class IntersectionModel(ap.Model):
             4: []   # Westbound
         }
 
+        #frame list to send to visualization software
+        # add new "frame" every update
+        # each frame is a list of tuples, with each tuple containing position and direction of each car.
+        self.frames = []
+
 
 
                     
@@ -527,6 +532,17 @@ class IntersectionModel(ap.Model):
     def update(self):
         self.update_pos_grid()
         self.update_traffic_light_grid()
+
+        #update frame list
+        frame = []
+        # for each car, append its position and direction to the frame list in the form of a tuple
+        for car in self.cars:
+            # create a tuple with the car's position and direction
+            frame.append((car.get_position(), car.direction))
+
+        # append the frame to the frames list
+        self.frames.append(frame)
+
         pass
 
     def end(self):
@@ -537,6 +553,9 @@ class IntersectionModel(ap.Model):
 
         #return total steps
         self.report('total_steps', self.t)
+
+        #return the frames
+        self.report('frames', self.frames)
 
 
     def setup_traffic_lights(self):
@@ -558,8 +577,6 @@ class IntersectionModel(ap.Model):
                 # Subtract 1 to match direction to index (0-3) in the traffic_lights list
                 self.traffic_controller.traffic_lights[direction - 1].append(light)
 
-
-
     def update_pos_grid(self):
         #clear grid with nan
         self.pos_grid = np.full((self.p.dimensions, self.p.dimensions), np.nan)
@@ -578,14 +595,13 @@ class IntersectionModel(ap.Model):
             pos = light.get_position()
             self.traffic_light_grid[pos] = light.state
 
-
     def update_car_count(self): #Function to add cars to the grid
         # Adds cars to the grid until the max is reached or spawn points are full
         
         if np.random.rand() < self.p.spawn_rate:
         # Check if the number of cars has reached the maximum
             if len(self.cars) == self.p.max_cars:
-                print("Max cars reached")
+                #print("Max cars reached")
                 return # Return if the maximum number of cars has been reached
             
             # Check spawn points arent full
@@ -603,8 +619,6 @@ class IntersectionModel(ap.Model):
         
             self.add_car(uncovered_spawn_points) # Add a car to the grid
 
-
-
     def add_car(self, spawn_points): #Function to add cars to the grid
 
         #Print available spawn points coordinates
@@ -621,9 +635,7 @@ class IntersectionModel(ap.Model):
         self.grid.add_agents(car, spawn_point.get_position())
         #print("Car added at ", car.get_position())
         self.cars.append(car[0]) # Add the car to the list of cars
-
-        
-
+     
     def setup_roads(self):
         intersection_agents = []  # List to store the intersection agents
         # CREATE ROAD AGENTS
@@ -661,8 +673,6 @@ class IntersectionModel(ap.Model):
                         # Directly store the position of this pre-intersection point
                         self.pre_intersection_pos.append((i, j))
 
-
-
     def is_pre_intersection(self, x, y, direction):
         """
         Check if the given position is directly before an intersection
@@ -679,8 +689,6 @@ class IntersectionModel(ap.Model):
         elif direction == 4:  # Westbound, check left if not at leftmost edge
             return y > 0 and self.intersection_matrix[x][y-1] == 5
         return False
-
-
 
     def create_intersection_matrix(self, n, m):
         # Initialize the matrix with zeros
@@ -752,20 +760,27 @@ def run_intersection_model(parameters):
 
 parameters={
     'dimensions': 16,  # Dimensions of the grid, minimum 4
-    'steps': 20,  # Number of steps to run the model
+    'steps': 10,  # Number of steps to run the model
     'max_cars': 3, # Maximum number of cars
     'spawn_rate': 1, # Rate of car spawn, chance of car spawn per step 
     'chance_run_yellow_light': 0.5, # Chance of running a yellow light
     'chance_run_red_light': 0.5, # Chance of running a red light
 }
 
-results =run_intersection_model(parameters)
+""" results =run_intersection_model(parameters)
 
 # Print the intersection matrix
 print(results['reporters']['intersection_matrix'][0])
 
 # Print the total steps
-print(results['reporters']['total_steps'][0]) 
+print(results['reporters']['total_steps'][0])
+
+# Print the frames
+print(results['reporters']['frames'][0])
+
+print(results)
+
+print(type(results)) """
 
 
 

@@ -1,13 +1,14 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from addition import add  # Import the add function from addition.py
-from intersection import run_intersection_model  # Import your model function
-from astarAgents import run_model
+from intersection import run_intersection_model  # Assuming this is your model function
 import numpy as np
-
+from addition import add  # Import the add function from addition.py
 
 app = Flask(__name__)
 CORS(app)
+
+# Global variable to store simulation results
+simulation_results = {}
 
 @app.route('/sum', methods=['GET'])
 def sum_xy():
@@ -19,58 +20,62 @@ def sum_xy():
     print(f"The sum of {x} and {y} is {z}")
     return jsonify(z=z)
 
-
-@app.route('/run_model', methods=['GET'])
+@app.route('/run_model', methods=['POST'])
 def run_model():
+    global simulation_results
     parameters = {
-        'dimensions': int(request.args.get('dimensions', 16)),
-        'steps': int(request.args.get('steps', 20)),
-        'max_cars': int(request.args.get('max_cars', 3)),
-        'spawn_rate': float(request.args.get('spawn_rate', 1)),
-        'chance_run_yellow_light': float(request.args.get('chance_run_yellow_light', 0.5)),
-        'chance_run_red_light': float(request.args.get('chance_run_red_light', 0.5)),
+        'dimensions': int(request.json.get('dimensions', 16)),
+        'steps': int(request.json.get('steps', 20)),
+        'max_cars': int(request.json.get('max_cars', 3)),
+        'spawn_rate': float(request.json.get('spawn_rate', 1)),
+        'chance_run_yellow_light': float(request.json.get('chance_run_yellow_light', 0.5)),
+        'chance_run_red_light': float(request.json.get('chance_run_red_light', 0.5)),
     }
-    results = run_intersection_model(parameters)
-    intersection_matrix = results['reporters']['intersection_matrix'][0]
-    total_steps = results['reporters']['total_steps'][0]
+    simulation_results = run_intersection_model(parameters)
+    return jsonify({"message": "Simulation run successfully"}), 200
 
-    # Ensure total_steps is a native Python int
-    total_steps = int(total_steps)
+@app.route('/frames', methods=['GET'])
+def get_frames():
+    if not simulation_results:
+        return jsonify({"error": "Simulation not run yet"}), 404
+    
+    def convert_to_native_python_types(frame):
+        """Convert all numpy data types to native Python types within a frame."""
+        native_frame = []
+        for position, direction in frame:
+            # Convert position to a list of Python integers if it's a numpy array
+            if isinstance(position, np.ndarray):
+                position = position.tolist()
+            # Ensure position is a list of Python integers and direction is a Python integer
+            position = [int(x) for x in position]
+            direction = int(direction)
+            native_frame.append({"position": position, "direction": direction})
+        return native_frame
 
-    # If intersection_matrix contains NumPy data types, convert them to Python lists with native int/float
+    serializable_frames = [convert_to_native_python_types(frame) for frame in simulation_results['reporters']['frames'][0]]
+
+    return jsonify(serializable_frames)
+
+
+
+
+@app.route('/intersection_matrix', methods=['GET'])
+def get_intersection_matrix():
+    if not simulation_results:
+        return jsonify({"error": "Simulation not run yet"}), 404
+    intersection_matrix = simulation_results['reporters']['intersection_matrix'][0]
     if isinstance(intersection_matrix, np.ndarray):
         intersection_matrix = intersection_matrix.tolist()
-    
-    # Convert all elements in intersection_matrix to native Python types if necessary
-    intersection_matrix = [[float(cell) if isinstance(cell, np.floating) else int(cell) if isinstance(cell, np.integer) else cell for cell in row] for row in intersection_matrix]
+    return jsonify(intersection_matrix)
 
-    print(intersection_matrix)
-    print(total_steps)
+@app.route('/total_steps', methods=['GET'])
+def get_total_steps():
+    if not simulation_results:
+        return jsonify({"error": "Simulation not run yet"}), 404
+    # Convert total_steps to a native Python int before serialization
+    total_steps = int(simulation_results['reporters']['total_steps'][0])
+    return jsonify({"total_steps": total_steps})
 
-    return jsonify({'intersection_matrix': intersection_matrix, 'total_steps': total_steps})
-
-
-@app.route('/run_astar', methods=['GET'])
-def run_astar():
-    parameters = {
-        'steps': int(request.args.get('steps', 20)),
-        'dimensions': int(request.args.get('dimensions', 16)),
-        'n_agents': int(request.args.get('n_agents', 1)),
-        'obstacle_density': float(request.args.get('obstacle_density', 0.2))
-    }
-
-    results = run_model(parameters)
-    # Ensure total_steps is a native Python int
-    total_steps = int(total_steps)
-
-    # If obstacle_matrix contains NumPy data types, convert them to Python lists with native int/float
-    if isinstance(obstacle_matrix, np.ndarray):
-        obstacle_matrix = obstacle_matrix.tolist()
-
-    # Convert all elements in obstacle_matrix to native Python types if necessary
-    obstacle_matrix = [[float(cell) if isinstance(cell, np.floating) else int(cell) if isinstance(cell, np.integer) else cell for cell in row] for row in obstacle_matrix]
-
-    return jsonify({'obstacle-matrix': obstacle_matrix, 'total_steps': total_steps})
 
 if __name__ == '__main__':
     app.run(debug=True, port=6000)
