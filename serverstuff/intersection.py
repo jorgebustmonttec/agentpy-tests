@@ -95,7 +95,7 @@ class Car(ap.Agent):
 
         self.grid_id = np.nan
         #generate a random 10 digit number to be used as the license plate
-        self.license_plate = randint(1000000000, 9999999999)
+        self.license_plate = self.generate_unique_license_plate()
         self.custom_id = 2 # Custom ID for the car agent
         self.overlay_id = 2
         # Speed of the car all start at 2
@@ -107,8 +107,6 @@ class Car(ap.Agent):
         #self.has_crossed = False # Flag to check if the car has crossed the intersection
         #self.intersection_time = 0 # Time the car has spent at the intersection
         #self.is_on_intersection = False # Flag to check if the car is on the intersection
-
-
 
     def action(self):
         # Look for the road agent the car is on
@@ -182,7 +180,6 @@ class Car(ap.Agent):
         # print the message for debugging
         #print(f"Broadcasting status: {status_message}")
 
-
     def update_direction(self, road):
         #check if agent has crossed the entire intersection
         #if self.intersection_time == self.model.intersection_length:
@@ -198,8 +195,6 @@ class Car(ap.Agent):
           #  self.is_on_intersection = True
            # self.intersection_time += 1
             
-
-
     def move_car(self):
         # check if speed is 0, if so, do not move
         if self.speed == 0:
@@ -233,6 +228,7 @@ class Car(ap.Agent):
 
         # If checks up to 4 tiles ahead don't require stopping or slowing, then check for space after the intersection
         #self.check_space_after_intersection()
+    
     def check_red_light_runners(self, distance):
         anticipated_position = self.get_position_ahead(distance)
         #print(f"[Debug - Red Light Runner Check] Agent {self.license_plate} position: {self.get_position()}, Direction: {self.direction}")
@@ -269,8 +265,6 @@ class Car(ap.Agent):
         #print("[Debug - Red Light Runner Check] No red light runners detected.")
         return False
 
-        
-
     def search_for_car(self, distance):
         anticipated_position = self.get_position_ahead(distance)
         #print(f"Agent position: {self.get_position()}")
@@ -300,12 +294,7 @@ class Car(ap.Agent):
                     return True
 
         return False
-
-
-
-       
-
-
+    
     """ def search_for_car(self, distance):
         # Look ahead a certain distance in front of the car
         # If car is right in front, stop (speed 0)
@@ -357,7 +346,6 @@ class Car(ap.Agent):
         else:
             return []
         
-
     def search_for_traffic_light(self, distance):
         # Look ahead a certain distance in front of the car
         #if light is right in front, stop
@@ -379,10 +367,6 @@ class Car(ap.Agent):
                         return True
         return False
     
-
-                
-            
-
     def look_ahead(self, distance):
 
         # Get the car's current position
@@ -409,12 +393,18 @@ class Car(ap.Agent):
         # Increase speed by 1 every 2 steps, up to a maximum of 3
         if self.model.t % 2 == 0:  # Assuming there's a model-wide timer you can access
             self.speed = min(self.speed + 1, 3)
-
-
         
     def get_position(self):
         return self.model.grid.positions[self]
 
+    def generate_unique_license_plate(self):
+        """Generates a unique license plate."""
+        existing_plates = {car.license_plate for car in self.model.cars}
+        
+        while True:
+            new_plate = randint(1000000000, 9999999999)
+            if new_plate not in existing_plates:
+                return new_plate
 
 class Traffic_Light(ap.Agent):
 
@@ -538,7 +528,7 @@ class IntersectionModel(ap.Model):
         # for each car, append its position and direction to the frame list in the form of a tuple
         for car in self.cars:
             # create a tuple with the car's position and direction
-            frame.append((car.get_position(), car.direction))
+            frame.append(( car.license_plate ,car.get_position(), car.direction))
 
         # append the frame to the frames list
         self.frames.append(frame)
@@ -758,7 +748,7 @@ def run_intersection_model(parameters):
     #print(steps)
     return results
 
-parameters={
+""" parameters={
     'dimensions': 16,  # Dimensions of the grid, minimum 4
     'steps': 10,  # Number of steps to run the model
     'max_cars': 3, # Maximum number of cars
@@ -767,7 +757,7 @@ parameters={
     'chance_run_red_light': 0.5, # Chance of running a red light
 }
 
-""" results =run_intersection_model(parameters)
+results =run_intersection_model(parameters)
 
 # Print the intersection matrix
 print(results['reporters']['intersection_matrix'][0])
@@ -780,9 +770,9 @@ print(results['reporters']['frames'][0])
 
 print(results)
 
-print(type(results)) """
+print(type(results))
 
-
+ """
 
 
 

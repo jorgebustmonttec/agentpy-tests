@@ -38,23 +38,25 @@ def run_model():
 def get_frames():
     if not simulation_results:
         return jsonify({"error": "Simulation not run yet"}), 404
-    
+
     def convert_to_native_python_types(frame):
-        """Convert all numpy data types to native Python types within a frame."""
+        """Convert all data within a frame to native Python types, including car IDs."""
         native_frame = []
-        for position, direction in frame:
-            # Convert position to a list of Python integers if it's a numpy array
+        for car_id, position, direction in frame:
+            # Ensure car ID is a string, position is a list of integers, and direction is an integer
+            car_id_str = str(car_id)
             if isinstance(position, np.ndarray):
                 position = position.tolist()
-            # Ensure position is a list of Python integers and direction is a Python integer
             position = [int(x) for x in position]
             direction = int(direction)
-            native_frame.append({"position": position, "direction": direction})
+            native_frame.append({"id": car_id_str, "position": position, "direction": direction})
         return native_frame
 
     serializable_frames = [convert_to_native_python_types(frame) for frame in simulation_results['reporters']['frames'][0]]
 
+    print(serializable_frames)
     return jsonify(serializable_frames)
+
 
 
 
