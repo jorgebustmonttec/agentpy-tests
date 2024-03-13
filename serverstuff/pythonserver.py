@@ -1,3 +1,4 @@
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from intersection import run_intersection_model  # Assuming this is your model function
@@ -34,28 +35,48 @@ def run_model():
     simulation_results = run_intersection_model(parameters)
     return jsonify({"message": "Simulation run successfully"}), 200
 
+def convert_to_native_python_types(cars, traffic_lights):
+    """Convert all data within a frame to native Python types, including car IDs."""
+    native_frame_cars = []
+    native_frame_traffic_lights = []
+
+    for car_id, position, direction in cars:
+        car_id_str = str(car_id)
+        if isinstance(position, np.ndarray):
+            position = position.tolist()
+        position = [int(x) for x in position]
+        # Check if direction is None before converting
+        if direction is not None:
+            direction = int(direction)
+        else:
+            direction = -1  # Use a placeholder value or handle error as appropriate
+        native_frame_cars.append({"id": car_id_str, "position": position, "direction": direction})
+
+    for traffic_light in traffic_lights:
+        position, state, direction = traffic_light
+        if isinstance(position, np.ndarray):
+            position = position.tolist()
+        position = [int(x) for x in position]
+        state = int(state)
+        direction = int(direction)
+        native_frame_traffic_lights.append({"position": position, "state": state, "direction": direction})
+
+    return {"cars": native_frame_cars, "trafficLights": native_frame_traffic_lights}
+
 @app.route('/frames', methods=['GET'])
 def get_frames():
     if not simulation_results:
         return jsonify({"error": "Simulation not run yet"}), 404
+    
+    frames_data = []
+    for frame in simulation_results['reporters']['frames'][0]:
+        # Split the frame into cars and traffic lights parts
+        cars, traffic_lights = frame
+        frame_data = convert_to_native_python_types(cars, traffic_lights)
+        frames_data.append(frame_data)
 
-    def convert_to_native_python_types(frame):
-        """Convert all data within a frame to native Python types, including car IDs."""
-        native_frame = []
-        for car_id, position, direction in frame:
-            # Ensure car ID is a string, position is a list of integers, and direction is an integer
-            car_id_str = str(car_id)
-            if isinstance(position, np.ndarray):
-                position = position.tolist()
-            position = [int(x) for x in position]
-            direction = int(direction)
-            native_frame.append({"id": car_id_str, "position": position, "direction": direction})
-        return native_frame
+    return jsonify(frames_data)
 
-    serializable_frames = [convert_to_native_python_types(frame) for frame in simulation_results['reporters']['frames'][0]]
-
-    print(serializable_frames)
-    return jsonify(serializable_frames)
 
 
 

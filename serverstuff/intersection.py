@@ -523,17 +523,31 @@ class IntersectionModel(ap.Model):
         self.update_pos_grid()
         self.update_traffic_light_grid()
 
-        #update frame list
-        frame = []
+        #update the frame list
+        #create a list to store the cars and traffic lights
+        carFrame = []
+        lightFrame = []
         # for each car, append its position and direction to the frame list in the form of a tuple
         for car in self.cars:
             # create a tuple with the car's position and direction
-            frame.append(( car.license_plate ,car.get_position(), car.direction))
+            carFrame.append(( car.license_plate ,car.get_position(), car.direction))
 
-        # append the frame to the frames list
-        self.frames.append(frame)
+        # for each traffic light, append its position and state to the frame list in the form of a tuple
+        #I messed up the indices and directions, so heres the fix
+        #self.activation_order = [3, 2, 4, 1]  # East, North, West, South (counter-clockwise)
+        # you can get the direction of the traffic light from its index in the traffic_lights list
+        for i in range(len(self.traffic_lights)):
+            pos = self.traffic_lights[i].get_position()
+            state = self.traffic_lights[i].state
+            #get direction before fix
+            direction = i + 1
+            # create a tuple with the traffic light's position, state, and direction
+            lightFrame.append((pos, state, direction))
+        # append the car and traffic light frame lists to the frame list
+        self.frames.append([carFrame, lightFrame])
 
         pass
+
 
     def end(self):
         #print each of the messages by message board and its contents
@@ -748,7 +762,7 @@ def run_intersection_model(parameters):
     #print(steps)
     return results
 
-""" parameters={
+parameters={
     'dimensions': 16,  # Dimensions of the grid, minimum 4
     'steps': 10,  # Number of steps to run the model
     'max_cars': 3, # Maximum number of cars
@@ -757,7 +771,7 @@ def run_intersection_model(parameters):
     'chance_run_red_light': 0.5, # Chance of running a red light
 }
 
-results =run_intersection_model(parameters)
+""" results =run_intersection_model(parameters)
 
 # Print the intersection matrix
 print(results['reporters']['intersection_matrix'][0])
@@ -770,9 +784,9 @@ print(results['reporters']['frames'][0])
 
 print(results)
 
-print(type(results))
+print(type(results)) """
 
- """
+
 
 
 
